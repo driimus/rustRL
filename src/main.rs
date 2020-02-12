@@ -1,4 +1,4 @@
-use rltk::{Console, GameState, Rltk, RGB};
+use rltk::{Console, GameState, Rltk, RGB, Point};
 use specs::prelude::*;
 #[macro_use]
 extern crate specs_derive;
@@ -12,15 +12,20 @@ mod rect;
 pub use rect::*;
 mod visibility_system;
 use visibility_system::VisibilitySystem;
+mod monster_ai_system;
+use monster_ai_system::MonsterAI;
 
 pub struct State {
-    pub ecs: World
+    pub ecs: World,
+    pub runstate: RunState,
 }
 
 impl State {
     fn run_systems(&mut self) {
         let mut vis = VisibilitySystem {};
         vis.run_now(&self.ecs);
+        let mut mob = MonsterAI {};
+        mob.run_now(&self.ecs);
         self.ecs.maintain();
     }
 }
@@ -29,8 +34,12 @@ impl GameState for State {
     fn tick(&mut self, ctx : &mut Rltk) {
         ctx.cls();
 
-        self.run_systems();
-        player_input(self, ctx);
+        if self.runstate == RunState::Running {
+            self.run_systems();
+            self.runstate = RunState::Paused;
+        } else {
+            self.runstate = player_input(self, ctx);
+        }
         draw_map(&self.ecs, ctx);
 
         let positions = self.ecs.read_storage::<Position>();
@@ -53,11 +62,13 @@ fn main() {
         .build();
 
     let mut gs = State {
-        ecs: World::new()
+        ecs: World::new(),
+        runstate: RunState::Running,
     };
     gs.ecs.register::<Position>();
     gs.ecs.register::<Renderable>();
     gs.ecs.register::<Player>();
+    gs.ecs.register::<Monster>();
     gs.ecs.register::<Viewshed>();
 
     let map: Map = Map::new_map_rooms_and_corridors();
@@ -81,10 +92,12 @@ fn main() {
                 bg: RGB::named(rltk::BLACK),
             })
             .with(Viewshed{ visible_tiles: Vec::new(), range: 8, dirty: true })
+            .with(Monster{})
             .build();
     }
 
     gs.ecs.insert(map);
+    gs.ecs.insert(Point::new(player_x, player_y));
 
     gs.ecs.create_entity()
         .with(Position { x: player_x, y: player_y })
