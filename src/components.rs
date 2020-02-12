@@ -32,3 +32,8 @@ pub enum RunState {
 	Paused,
 	Running,
 }
+
+#[derive(Component, Debug)]
+pub struct Name {
+	pub name: String
+}
