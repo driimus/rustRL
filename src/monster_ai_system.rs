@@ -1,6 +1,6 @@
 extern crate specs;
 use specs::prelude::*;
-use super::{Viewshed, Map, Monster, Name, Position};
+use super::{Viewshed, Map, Monster, Name, Position, WantsToMelee};
 extern crate rltk;
 use rltk::{Point, console};
 
@@ -12,14 +12,19 @@ impl<'a> System<'a> for MonsterAI {
                       ReadStorage<'a, Viewshed>,
                       ReadStorage<'a, Monster>,
                       ReadStorage<'a, Name>,
-                      WriteStorage<'a, Position>);
+                      WriteStorage<'a, Position>,
+                      WriteStorage<'a, WantsToMelee>);
 
   fn run(&mut self, data: Self::SystemData) {
-    let (mut map, player_pos, mut viewshed, monster, name, mut position) = data;
+    let (mut map, player_pos, mut viewshed, monster, name, mut position, mut wants_to_melee) = data;
 
-    for (viewshed, _monster, name, pos) in (&viewshed, &monster, &name, &position).join() {
+    for (mut viewshed, _monster, mut pos) in (&mut viewshed, &monster, &mut position).join() {
+      let distance = rltk::DistanceAlg::Pythagoras.distance2d(Point::new(pos.x, pos.y), *player_pos);
+      if distance < 1.5 {
+          wants_to_melee.insert(entity, WantsToMelee{ target: *player_entity }).expect("Unable to insert attack");
+      }
+
     	if viewshed.visible_tiles.contains(&*player_pos) {
-    		console::log(format!("{} yeets", name.name));
         let path = rltk::a_star_search(
             map.xy_idx(pos.x, pos.y) as i32,
             map.xy_idx(player_pos.x, player_pos.y) as i32,
