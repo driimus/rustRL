@@ -1,4 +1,7 @@
+extern crate specs;
 use specs::prelude::*;
+extern crate specs_derive;
+extern crate rltk;
 use rltk::{RGB};
 
 #[derive(Component)]
@@ -27,12 +30,6 @@ pub struct Viewshed {
 	pub dirty: bool,
 }
 
-#[derive(PartialEq, Copy, Clone)]
-pub enum RunState {
-	Paused,
-	Running,
-}
-
 #[derive(Component, Debug)]
 pub struct Name {
 	pub name: String
@@ -40,3 +37,21 @@ pub struct Name {
 
 #[derive(Component, Debug)]
 pub struct BlocksTile {}
+
+#[derive(Component, Debug)]
+pub struct CombatStats {
+    pub max_hp : i32,
+    pub hp : i32,
+    pub defense : i32,
+    pub power : i32
+}
+
+#[derive(Component, Debug, Clone)]
+pub struct WantsToMelee {
+    pub target : Entity
+}
+
+#[derive(Component, Debug)]
+pub struct SufferDamage {
+    pub amount : i32
+}
