@@ -1,7 +1,7 @@
-use rltk::{VirtualKeyCode, Rltk, Point};
+use super::{CombatStats, Map, Player, Position, RunState, State, Viewshed, WantsToMelee};
+use rltk::{Point, Rltk, VirtualKeyCode};
 use specs::prelude::*;
-use super::{Position, Player, CombatStats, State, Map, Viewshed, RunState, WantsToMelee};
-use std::cmp::{min, max};
+use std::cmp::{max, min};
 
 pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let mut positions = ecs.write_storage::<Position>();
@@ -12,9 +12,16 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
     let map = ecs.fetch::<Map>();
     let entities = ecs.entities();
 
-    for (entity, _player, pos, viewshed) in (&entities, &players, &mut positions, &mut viewsheds).join() {
-        if pos.x + delta_x < 1 || pos.x + delta_x > map.width-1
-        || pos.y + delta_y < 1 || pos.y + delta_y > map.height-1 { return; }
+    for (entity, _player, pos, viewshed) in
+        (&entities, &players, &mut positions, &mut viewsheds).join()
+    {
+        if pos.x + delta_x < 1
+            || pos.x + delta_x > map.width - 1
+            || pos.y + delta_y < 1
+            || pos.y + delta_y > map.height - 1
+        {
+            return;
+        }
 
         let destination_idx = map.xy_idx(pos.x + delta_x, pos.y + delta_y);
 
@@ -23,8 +30,13 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 
             if let Some(_target) = target {
                 wants_to_melee
-                .insert(entity, WantsToMelee{ target: *potential_target })
-                .expect("Add target failed");
+                    .insert(
+                        entity,
+                        WantsToMelee {
+                            target: *potential_target,
+                        },
+                    )
+                    .expect("Add target failed");
                 return;
             }
         }
@@ -44,13 +56,13 @@ pub fn try_move_player(delta_x: i32, delta_y: i32, ecs: &mut World) {
 
 pub fn player_input(gs: &mut State, ctx: &mut Rltk) -> RunState {
     match ctx.key {
-        None => { return RunState::AwaitingInput }
+        None => return RunState::AwaitingInput,
         Some(key) => match key {
             VirtualKeyCode::Left => try_move_player(-1, 0, &mut gs.ecs),
             VirtualKeyCode::Right => try_move_player(1, 0, &mut gs.ecs),
             VirtualKeyCode::Up => try_move_player(0, -1, &mut gs.ecs),
             VirtualKeyCode::Down => try_move_player(0, 1, &mut gs.ecs),
-            _ => { return RunState::AwaitingInput }
+            _ => return RunState::AwaitingInput,
         },
     }
     RunState::PlayerTurn
